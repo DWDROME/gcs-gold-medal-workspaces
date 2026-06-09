@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "skills": {
+    "frontend-fullchain-optimization": {
+      "source": "mindfold-ai/marketplace",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-fullchain-optimization/SKILL.md",
+      "computedHash": "e6a2bed14a21a956b1b7c96f2b0c3ff1f59027650dcfa76a48e753b6c2dd7622"
+    },
+    "mem-recall": {
+      "source": "mindfold-ai/marketplace",
+      "sourceType": "github",
+      "skillPath": "skills/mem-recall/SKILL.md",
+      "computedHash": "3fe6816fb24a453f755d76afe35097f7789a84f4fef80df07ae95173e01cdee5"
+    },
+    "trellis-meta": {
+      "source": "mindfold-ai/marketplace",
+      "sourceType": "github",
+      "skillPath": "skills/trellis-meta/SKILL.md",
+      "computedHash": "77df9e3380cd9c6449436b09f01a03ab10b79bdb9fc94bcb4acf45457d382798"
+    },
+    "trellis-spec-bootstarp": {
+      "source": "mindfold-ai/marketplace",
+      "sourceType": "github",
+      "skillPath": "skills/trellis-spec-bootstarp/SKILL.md",
+      "computedHash": "19949a773bec0240f5184faec69dd6dbc8780a9749e4a378214e0ecc98f25c52"
+    }
+  }
+}

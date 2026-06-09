@@ -1,0 +1,25 @@
+#!/bin/bash
+
+### BEGIN INIT INFO
+# Provides:          gcs-host
+# Required-Start:    $all
+# Required-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start gcs host at boot time
+# Description:       Enable gcs host vision program
+### END INIT INFO
+
+for pid in $(pgrep -x python3 2>/dev/null); do
+  if tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null | grep -q '/root/gcs-gold-medal-main/cv2_python/host_main.py'; then
+    kill "$pid" 2>/dev/null || true
+  fi
+done
+
+sleep 1
+cd /root/gcs-gold-medal-main/cv2_python
+export GCS_HOST_SERIAL=/dev/ttyS1
+export GCS_HOST_BAUD=115200
+/usr/bin/python3 -u /root/gcs-gold-medal-main/cv2_python/host_main.py >> /var/log/gcs-host.log 2>&1 &
+
+exit 0
