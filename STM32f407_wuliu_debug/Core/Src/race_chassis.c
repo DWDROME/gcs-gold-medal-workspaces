@@ -13,6 +13,7 @@ uint8_t dianji_move_flag = 0U;
 static int car_move_speed = 50;
 static int a1 = 70;
 static int a = 230;
+static const float yuantai_move_ms = 300.0f;
 static float current_pos = 0.0f;
 static float current_pos1 = 0.0f;
 static float yuantai_angle = 60.84f;
@@ -424,6 +425,6 @@ int move_all1(float target_pos, uint16_t speed, uint8_t accel, float target_pos1
 
   (void)pingtui_control(target_pos, speed, accel);
   (void)shengjiang_control((int)target_pos1, speed1, accel1);
-  set_yuantai_Angle(target, 300.0f);
-  return 300;
+  set_yuantai_Angle(target, yuantai_move_ms);
+  return (int)yuantai_move_ms;
 }
