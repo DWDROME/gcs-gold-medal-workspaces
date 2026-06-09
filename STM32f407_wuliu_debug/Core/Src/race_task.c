@@ -10,6 +10,28 @@
 #define x_center_blue      955
 #define y_center_blue      519
 
+#define ASCII_0 0x30U
+#define ASCII_8 0x38U
+#define ASCII_9 0x39U
+
+#define VISION_CMD_TASK_ORDER 0x31U
+#define VISION_CMD_FIRST_BLOCK_LOCATE 0x32U
+#define VISION_CMD_FIRST_BLOCK_CODES 0x33U
+#define VISION_CMD_SECOND_BLOCK_CODES 0x34U
+#define VISION_CMD_FIRST_BLOCK_CODE1 0x35U
+#define VISION_CMD_FIRST_BLOCK_CODE2 0x36U
+#define VISION_CMD_RING_COARSE 0x37U
+#define VISION_CMD_RING_FINE 0x38U
+#define VISION_CMD_SECOND_BLOCK_LOCATE 0x61U
+#define VISION_CMD_SECOND_BLOCK_CODE1 0x62U
+#define VISION_CMD_SECOND_BLOCK_CODE2 0x63U
+#define VISION_CMD_LAST_BLOCK_LOCATE 0x39U
+
+#define VISION_RESULT_RED 0x31U
+#define VISION_RESULT_GREEN 0x32U
+#define VISION_RESULT_BLUE 0x33U
+#define VISION_RESULT_MISS 0x34U
+
 static char tjcstr[100];
 static int task[6];
 static int ypcode[6];
@@ -37,32 +59,32 @@ static void wait_packet_98(void)
 {
   while (1)
   {
-    if (Serial_RxPacket[0] == 0x39U && Serial_RxPacket[1] == 0x38U)
+    if (Serial_RxPacket[0] == ASCII_9 && Serial_RxPacket[1] == ASCII_8)
     {
       break;
     }
     if (Serial_GetRxFlag() == 1U &&
-        Serial_RxPacket[0] == 0x39U && Serial_RxPacket[1] == 0x38U)
+        Serial_RxPacket[0] == ASCII_9 && Serial_RxPacket[1] == ASCII_8)
     {
       break;
     }
   }
-  Serial_RxPacket[0] = 0x30U;
-  Serial_RxPacket[1] = 0x30U;
+  Serial_RxPacket[0] = ASCII_0;
+  Serial_RxPacket[1] = ASCII_0;
 }
 
 static void transfer_position_wukuai(uint8_t task_choose, float distance, uint8_t color)
 {
   float bilichi = 0.0f;
 
-  x_origin = (float)((Serial_RxPacket[0] - 0x30U) * 1000U +
-                     (Serial_RxPacket[1] - 0x30U) * 100U +
-                     (Serial_RxPacket[2] - 0x30U) * 10U +
-                     (Serial_RxPacket[3] - 0x30U));
-  y_origin = (float)((Serial_RxPacket[4] - 0x30U) * 1000U +
-                     (Serial_RxPacket[5] - 0x30U) * 100U +
-                     (Serial_RxPacket[6] - 0x30U) * 10U +
-                     (Serial_RxPacket[7] - 0x30U));
+  x_origin = (float)((Serial_RxPacket[0] - ASCII_0) * 1000U +
+                     (Serial_RxPacket[1] - ASCII_0) * 100U +
+                     (Serial_RxPacket[2] - ASCII_0) * 10U +
+                     (Serial_RxPacket[3] - ASCII_0));
+  y_origin = (float)((Serial_RxPacket[4] - ASCII_0) * 1000U +
+                     (Serial_RxPacket[5] - ASCII_0) * 100U +
+                     (Serial_RxPacket[6] - ASCII_0) * 10U +
+                     (Serial_RxPacket[7] - ASCII_0));
 
   if (task_choose == 0x01U)
   {
@@ -82,21 +104,21 @@ static void transfer_position_wukuai(uint8_t task_choose, float distance, uint8_
 
   if (color == 2U)
   {
-    if (Serial_RxPacket[8] == 0x31U) direct_x += distance_wukuai;
-    else if (Serial_RxPacket[8] == 0x33U) direct_x -= distance_wukuai;
+    if (Serial_RxPacket[8] == VISION_RESULT_RED) direct_x += distance_wukuai;
+    else if (Serial_RxPacket[8] == VISION_RESULT_BLUE) direct_x -= distance_wukuai;
   }
   else if (color == 1U)
   {
-    if (Serial_RxPacket[8] == 0x32U) direct_x -= distance_wukuai;
-    else if (Serial_RxPacket[8] == 0x33U) direct_x -= 2.0f * distance_wukuai;
+    if (Serial_RxPacket[8] == VISION_RESULT_GREEN) direct_x -= distance_wukuai;
+    else if (Serial_RxPacket[8] == VISION_RESULT_BLUE) direct_x -= 2.0f * distance_wukuai;
   }
   else if (color == 3U)
   {
-    if (Serial_RxPacket[8] == 0x32U) direct_x += distance_wukuai;
-    else if (Serial_RxPacket[8] == 0x31U) direct_x += 2.0f * distance_wukuai;
+    if (Serial_RxPacket[8] == VISION_RESULT_GREEN) direct_x += distance_wukuai;
+    else if (Serial_RxPacket[8] == VISION_RESULT_RED) direct_x += 2.0f * distance_wukuai;
   }
 
-  if (Serial_RxPacket[8] == 0x34U)
+  if (Serial_RxPacket[8] == VISION_RESULT_MISS)
   {
     direct_y = 5.0f;
     direct_x = -5.0f;
@@ -108,14 +130,14 @@ static void transfer_position_sehuan(uint8_t fenbian_choose, uint8_t task_num)
   float x_center = 0.0f;
   float y_center = 0.0f;
 
-  x_origin = (float)((Serial_RxPacket[0] - 0x30U) * 1000U +
-                     (Serial_RxPacket[1] - 0x30U) * 100U +
-                     (Serial_RxPacket[2] - 0x30U) * 10U +
-                     (Serial_RxPacket[3] - 0x30U));
-  y_origin = (float)((Serial_RxPacket[4] - 0x30U) * 1000U +
-                     (Serial_RxPacket[5] - 0x30U) * 100U +
-                     (Serial_RxPacket[6] - 0x30U) * 10U +
-                     (Serial_RxPacket[7] - 0x30U));
+  x_origin = (float)((Serial_RxPacket[0] - ASCII_0) * 1000U +
+                     (Serial_RxPacket[1] - ASCII_0) * 100U +
+                     (Serial_RxPacket[2] - ASCII_0) * 10U +
+                     (Serial_RxPacket[3] - ASCII_0));
+  y_origin = (float)((Serial_RxPacket[4] - ASCII_0) * 1000U +
+                     (Serial_RxPacket[5] - ASCII_0) * 100U +
+                     (Serial_RxPacket[6] - ASCII_0) * 10U +
+                     (Serial_RxPacket[7] - ASCII_0));
 
   if (fenbian_choose == 0x01U)
   {
@@ -126,17 +148,17 @@ static void transfer_position_sehuan(uint8_t fenbian_choose, uint8_t task_num)
   }
   else if (fenbian_choose == 0x02U)
   {
-    if (Serial_RxPacket[8] == 0x31U)
+    if (Serial_RxPacket[8] == VISION_RESULT_RED)
     {
       x_center = (float)x_center_red;
       y_center = (float)y_center_red;
     }
-    else if (Serial_RxPacket[8] == 0x32U)
+    else if (Serial_RxPacket[8] == VISION_RESULT_GREEN)
     {
       x_center = (float)x_center_green;
       y_center = (float)y_center_green;
     }
-    else if (Serial_RxPacket[8] == 0x33U)
+    else if (Serial_RxPacket[8] == VISION_RESULT_BLUE)
     {
       x_center = (float)x_center_blue;
       y_center = (float)y_center_blue;
@@ -147,21 +169,21 @@ static void transfer_position_sehuan(uint8_t fenbian_choose, uint8_t task_num)
 
   if (task_num == 2U)
   {
-    if (Serial_RxPacket[8] == 0x31U) direct_x += distance_wukuai;
-    else if (Serial_RxPacket[8] == 0x33U) direct_x -= distance_wukuai;
+    if (Serial_RxPacket[8] == VISION_RESULT_RED) direct_x += distance_wukuai;
+    else if (Serial_RxPacket[8] == VISION_RESULT_BLUE) direct_x -= distance_wukuai;
   }
   else if (task_num == 1U)
   {
-    if (Serial_RxPacket[8] == 0x32U) direct_x -= distance_wukuai;
-    else if (Serial_RxPacket[8] == 0x33U) direct_x -= 2.0f * distance_wukuai;
+    if (Serial_RxPacket[8] == VISION_RESULT_GREEN) direct_x -= distance_wukuai;
+    else if (Serial_RxPacket[8] == VISION_RESULT_BLUE) direct_x -= 2.0f * distance_wukuai;
   }
   else if (task_num == 3U)
   {
-    if (Serial_RxPacket[8] == 0x32U) direct_x += distance_wukuai;
-    else if (Serial_RxPacket[8] == 0x31U) direct_x += 2.0f * distance_wukuai;
+    if (Serial_RxPacket[8] == VISION_RESULT_GREEN) direct_x += distance_wukuai;
+    else if (Serial_RxPacket[8] == VISION_RESULT_RED) direct_x += 2.0f * distance_wukuai;
   }
 
-  if (Serial_RxPacket[8] == 0x34U)
+  if (Serial_RxPacket[8] == VISION_RESULT_MISS)
   {
     direct_y = 3.0f;
     direct_x = -3.0f;
@@ -366,7 +388,7 @@ void race_task_run(void)
 {
   mypid.integral = 0.0f;
   (void)Serial_GetRxFlag();
-  Serial_SendByte(0x31U);
+  Serial_SendByte(VISION_CMD_TASK_ORDER);
 
   car_move2(150.0f, 0.0f, 150, 150);
   car_move1(0.0f, -530.0f, 150, 200);
@@ -376,20 +398,20 @@ void race_task_run(void)
     if (Serial_GetRxFlag() == 1U)
     {
       (void)snprintf(tjcstr, sizeof(tjcstr), "t0.txt=\"%d%d%d+%d%d%d \"",
-                     Serial_RxPacket[0] - 0x30U, Serial_RxPacket[1] - 0x30U, Serial_RxPacket[2] - 0x30U,
-                     Serial_RxPacket[4] - 0x30U, Serial_RxPacket[5] - 0x30U, Serial_RxPacket[6] - 0x30U);
+                     Serial_RxPacket[0] - ASCII_0, Serial_RxPacket[1] - ASCII_0, Serial_RxPacket[2] - ASCII_0,
+                     Serial_RxPacket[4] - ASCII_0, Serial_RxPacket[5] - ASCII_0, Serial_RxPacket[6] - ASCII_0);
       HMISends(tjcstr);
       HMISendb(0xffU);
       break;
     }
   }
 
-  task[0] = Serial_RxPacket[0] - 0x30U;
-  task[1] = Serial_RxPacket[1] - 0x30U;
-  task[2] = Serial_RxPacket[2] - 0x30U;
-  task[3] = Serial_RxPacket[4] - 0x30U;
-  task[4] = Serial_RxPacket[5] - 0x30U;
-  task[5] = Serial_RxPacket[6] - 0x30U;
+  task[0] = Serial_RxPacket[0] - ASCII_0;
+  task[1] = Serial_RxPacket[1] - ASCII_0;
+  task[2] = Serial_RxPacket[2] - ASCII_0;
+  task[3] = Serial_RxPacket[4] - ASCII_0;
+  task[4] = Serial_RxPacket[5] - ASCII_0;
+  task[5] = Serial_RxPacket[6] - ASCII_0;
 
   set_wukuaipingtai_weizhi(0x01);
   race_heat_set(300U);
@@ -400,33 +422,33 @@ void race_task_run(void)
   move_all1(40.0f, 1000U, 200U, 0.0f, 2000U, 200U, 278.0f, 13.0f);
 
   (void)Serial_GetRxFlag();
-  Serial_SendByte(0x32U);
+  Serial_SendByte(VISION_CMD_FIRST_BLOCK_LOCATE);
   car_move2(-30.0f, 0.0f, 100, 100);
   while (1)
   {
     while (Serial_GetRxFlag() == 0U) {}
     transfer_position_wukuai(0x01U, 70.0f, 0x00U);
     car_move_distance(direct_x, direct_y, 100, 80);
-    if (Serial_RxPacket[8] != 0x34U) break;
-    wait_send_shumeipai(0x32U, 15000U);
+    if (Serial_RxPacket[8] != VISION_RESULT_MISS) break;
+    wait_send_shumeipai(VISION_CMD_FIRST_BLOCK_LOCATE, 15000U);
   }
 
   move_all(60.0f, 1000U, 200U, 0.0f, 2000U, 200U, 278.0f, 13.0f);
-  wait_send_shumeipai(0x33U, 20000U);
-  ypcode[0] = Serial_RxPacket[0] - 0x30U;
-  ypcode[1] = Serial_RxPacket[1] - 0x30U;
-  ypcode[2] = Serial_RxPacket[2] - 0x30U;
+  wait_send_shumeipai(VISION_CMD_FIRST_BLOCK_CODES, 20000U);
+  ypcode[0] = Serial_RxPacket[0] - ASCII_0;
+  ypcode[1] = Serial_RxPacket[1] - ASCII_0;
+  ypcode[2] = Serial_RxPacket[2] - ASCII_0;
 
   set_wukuaipingtai_weizhi(0x01);
   yuantai_na((uint8_t)ypcode[0]);
   set_wukuaipingtai_weizhi(0x02);
   yuantai_na1((uint8_t)ypcode[1]);
-  wait_send_shumeipai(0x35U, 30000U);
+  wait_send_shumeipai(VISION_CMD_FIRST_BLOCK_CODE1, 30000U);
   wait_packet_98();
   yuantai_na2((uint8_t)ypcode[1]);
   set_wukuaipingtai_weizhi(0x03);
   yuantai_na1((uint8_t)ypcode[2]);
-  wait_send_shumeipai(0x36U, 30000U);
+  wait_send_shumeipai(VISION_CMD_FIRST_BLOCK_CODE2, 30000U);
   wait_packet_98();
   yuantai_na2((uint8_t)ypcode[2]);
 
@@ -449,16 +471,16 @@ void race_task_run(void)
   race_heat_set(300U);
   while (1)
   {
-    wait_send_shumeipai(0x37U, 10000U);
+    wait_send_shumeipai(VISION_CMD_RING_COARSE, 10000U);
     transfer_position_sehuan(0x01U, 0x02U);
     car_move_distance(direct_x, direct_y, 180, 150);
-    if (Serial_RxPacket[8] != 0x34U) break;
+    if (Serial_RxPacket[8] != VISION_RESULT_MISS) break;
   }
   PID_move(0, 0, 0, 1000U, -180.0f, 4);
 
-  wait_send_shumeipai(0x38U, 10000U);
+  wait_send_shumeipai(VISION_CMD_RING_FINE, 10000U);
   transfer_position_sehuan(0x02U, 0x02U);
-  if (Serial_RxPacket[8] == 0x34U) car_move_distance(0.0f, 0.0f, 70, 50);
+  if (Serial_RxPacket[8] == VISION_RESULT_MISS) car_move_distance(0.0f, 0.0f, 70, 50);
   else car_move_distance(direct_x, direct_y, 130, 100);
 
   move_all(-48.0f, 1000U, 200U, 33.0f, 1000U, 200U, 135.0f, 13.0f);
@@ -496,16 +518,16 @@ void race_task_run(void)
   race_heat_set(300U);
   while (1)
   {
-    wait_send_shumeipai(0x37U, 10000U);
+    wait_send_shumeipai(VISION_CMD_RING_COARSE, 10000U);
     transfer_position_sehuan(0x01U, 0x02U);
     car_move_distance(direct_x, direct_y, 180, 150);
-    if (Serial_RxPacket[8] != 0x34U) break;
+    if (Serial_RxPacket[8] != VISION_RESULT_MISS) break;
   }
   PID_move(0, 0, 0, 1000U, 90.0f, 4);
 
-  wait_send_shumeipai(0x38U, 10000U);
+  wait_send_shumeipai(VISION_CMD_RING_FINE, 10000U);
   transfer_position_sehuan(0x02U, 0x02U);
-  if (Serial_RxPacket[8] == 0x34U) car_move_distance(0.0f, 0.0f, 70, 50);
+  if (Serial_RxPacket[8] == VISION_RESULT_MISS) car_move_distance(0.0f, 0.0f, 70, 50);
   else car_move_distance(direct_x, direct_y, 130, 100);
 
   move_all(-48.0f, 1000U, 200U, 33.0f, 1000U, 200U, 135.0f, 13.0f);
@@ -536,7 +558,7 @@ void race_task_run(void)
   race_heat_set(300U);
   move_all1(40.0f, 1000U, 200U, 0.0f, 2000U, 200U, 278.0f, 13.0f);
   (void)Serial_GetRxFlag();
-  Serial_SendByte(0x61U);
+  Serial_SendByte(VISION_CMD_SECOND_BLOCK_LOCATE);
   PID_move(30, 0, 0, 300U, 0.0f, 1);
   delay_ms1(100U);
   while (1)
@@ -544,24 +566,24 @@ void race_task_run(void)
     while (Serial_GetRxFlag() == 0U) {}
     transfer_position_wukuai(0x01U, 70.0f, 0x00U);
     car_move_distance(direct_x, direct_y, 100, 80);
-    if (Serial_RxPacket[8] != 0x34U) break;
-    wait_send_shumeipai(0x61U, 15000U);
+    if (Serial_RxPacket[8] != VISION_RESULT_MISS) break;
+    wait_send_shumeipai(VISION_CMD_SECOND_BLOCK_LOCATE, 15000U);
   }
   move_all(60.0f, 1000U, 200U, 0.0f, 2000U, 200U, 278.0f, 13.0f);
-  wait_send_shumeipai(0x34U, 20000U);
-  ypcode[0] = Serial_RxPacket[0] - 0x30U;
-  ypcode[1] = Serial_RxPacket[1] - 0x30U;
-  ypcode[2] = Serial_RxPacket[2] - 0x30U;
+  wait_send_shumeipai(VISION_CMD_SECOND_BLOCK_CODES, 20000U);
+  ypcode[0] = Serial_RxPacket[0] - ASCII_0;
+  ypcode[1] = Serial_RxPacket[1] - ASCII_0;
+  ypcode[2] = Serial_RxPacket[2] - ASCII_0;
   set_wukuaipingtai_weizhi(0x01);
   yuantai_na((uint8_t)ypcode[0]);
   set_wukuaipingtai_weizhi(0x02);
   yuantai_na1((uint8_t)ypcode[1]);
-  wait_send_shumeipai(0x62U, 30000U);
+  wait_send_shumeipai(VISION_CMD_SECOND_BLOCK_CODE1, 30000U);
   wait_packet_98();
   yuantai_na2((uint8_t)ypcode[1]);
   set_wukuaipingtai_weizhi(0x03);
   yuantai_na1((uint8_t)ypcode[2]);
-  wait_send_shumeipai(0x63U, 30000U);
+  wait_send_shumeipai(VISION_CMD_SECOND_BLOCK_CODE2, 30000U);
   wait_packet_98();
   yuantai_na2((uint8_t)ypcode[2]);
 
@@ -583,15 +605,15 @@ void race_task_run(void)
   race_heat_set(300U);
   while (1)
   {
-    wait_send_shumeipai(0x37U, 20000U);
+    wait_send_shumeipai(VISION_CMD_RING_COARSE, 20000U);
     transfer_position_sehuan(0x01U, 0x02U);
     car_move_distance(direct_x, direct_y, 180, 150);
-    if (Serial_RxPacket[8] != 0x34U) break;
+    if (Serial_RxPacket[8] != VISION_RESULT_MISS) break;
   }
   PID_move(0, 0, 0, 1000U, -180.0f, 4);
-  wait_send_shumeipai(0x38U, 20000U);
+  wait_send_shumeipai(VISION_CMD_RING_FINE, 20000U);
   transfer_position_sehuan(0x02U, 0x02U);
-  if (Serial_RxPacket[8] == 0x34U) car_move_distance(0.0f, 0.0f, 70, 50);
+  if (Serial_RxPacket[8] == VISION_RESULT_MISS) car_move_distance(0.0f, 0.0f, 70, 50);
   else car_move_distance(direct_x, direct_y, 130, 100);
 
   move_all(-48.0f, 1000U, 200U, 33.0f, 1000U, 200U, 135.0f, 13.0f);
@@ -629,15 +651,15 @@ void race_task_run(void)
   race_heat_set(300U);
   while (1)
   {
-    wait_send_shumeipai(0x39U, 10000U);
+    wait_send_shumeipai(VISION_CMD_LAST_BLOCK_LOCATE, 10000U);
     transfer_position_wukuai(0x02U, 70.0f, 0x02U);
     car_move_distance(direct_x, direct_y, 180, 150);
     delay_ms1(200U);
-    if (Serial_RxPacket[8] != 0x34U) break;
+    if (Serial_RxPacket[8] != VISION_RESULT_MISS) break;
   }
-  wait_send_shumeipai(0x39U, 10000U);
+  wait_send_shumeipai(VISION_CMD_LAST_BLOCK_LOCATE, 10000U);
   transfer_position_wukuai(0x02U, 70.0f, 0x02U);
-  if (Serial_RxPacket[8] == 0x34U) car_move_distance(0.0f, 0.0f, 70, 50);
+  if (Serial_RxPacket[8] == VISION_RESULT_MISS) car_move_distance(0.0f, 0.0f, 70, 50);
   else car_move_distance(direct_x, direct_y, 180, 150);
 
   move_all(-48.0f, 1000U, 200U, 33.0f, 1000U, 200U, 135.0f, 13.0f);
