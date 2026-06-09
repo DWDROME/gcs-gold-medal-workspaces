@@ -7,6 +7,10 @@
 #include <math.h>
 #include <stdlib.h>
 
+/* ==================== 参数常量 ====================
+ * 这里放底盘、舵机、执行机构和回零用到的现场可调参数。
+ * 比赛调参优先改这里，不要把魔法数散到动作流程里。
+ */
 #define ABSF(x) ((x) >= 0.0f ? (x) : -(x))
 #define SERVO_PWM_MIN 500U
 #define SERVO_PWM_MAX 2500U
@@ -53,6 +57,10 @@ typedef struct
   uint8_t data[8];
 } motor_can_frame_t;
 
+/* ==================== 底盘PID和IMU共享量 ====================
+ * 这些变量会被底盘PID、调试命令和任务流程直接查看。
+ * 为了现场调试直观，保留全局名字，不再包成复杂结构体。
+ */
 PID mypid = {0};
 float feedbackValue = 0.0f;
 float feedbackValue_pre = 0.0f;
@@ -69,6 +77,11 @@ uint8_t PID_control_flag = 0U;
 uint8_t circle = 0U;
 float same_time = 0.0f;
 
+/* ==================== 执行机构软件位置 ====================
+ * current_pos  : 平推软件位置。
+ * current_pos1 : 升降软件位置。
+ * yuantai_angle / wukuai_angle 用来估算舵机等待时间和慢速过渡。
+ */
 static int car_move_speed = 50;
 static int a1 = 70;
 static int a = 230;
@@ -92,7 +105,17 @@ static uint16_t s_home_phase_ma = 0U;
 static bool s_home_vel_valid = false;
 static bool s_home_phase_valid = false;
 
+/* ==================== IMU航向零位 ====================
+ * 上电后车身必须静止一小段时间，把当前Yaw记为0度。
+ * 后面所有底盘PID角度都用相对Yaw，路线里的目标角不用改。
+ */
+static float yaw0 = 0.0f;
+
 #if SHENGJIANG_HOMEZERO_LOG
+/* ==================== 升降回零串口日志 ====================
+ * 只服务回零排障：CAN回包、速度、电流相位、状态位。
+ * 关闭 SHENGJIANG_HOMEZERO_LOG 后这些函数全部变成空操作。
+ */
 static void dbg_txs(const char *s)
 {
   uint16_t n = 0U;
@@ -234,6 +257,10 @@ static void dbg_home_status(uint32_t elapsed_ms, uint8_t status)
 #define dbg_home_status(elapsed_ms, status) ((void)0)
 #endif
 
+/* ==================== 舵机PWM工具 ====================
+ * 云台、五块平台、爪手共用TIM2 PWM。
+ * 慢速函数用于减少机械冲击，当前位置变量必须同步更新。
+ */
 static uint16_t servo_pulse_270(float angle)
 {
   return (uint16_t)((angle / 270.0f) * 2000.0f + 500.0f);
@@ -308,6 +335,10 @@ static void set_wukuai_pwm_slow(uint16_t target_pwm)
   set_servo_pwm_slow(TIM_CHANNEL_3, wukuai_pwm_from_angle(wukuai_angle), target_pwm, WUKUAI_PWM_STEP, WUKUAI_STEP_DELAY_MS);
 }
 
+/* ==================== CAN接收缓存 ====================
+ * 中断里只把CAN帧塞进小环形队列，主循环侧再解析。
+ * 回零判断依赖速度、电流相位和原点状态回包。
+ */
 static void can_filter_start(void)
 {
   CAN_FilterTypeDef filter = {0};
@@ -382,6 +413,10 @@ static int32_t abs_i32(int32_t v)
   return (v < 0) ? -v : v;
 }
 
+/* ==================== ZDT回零和停止保护 ====================
+ * stop_repeat 用来确保电机真的停下。
+ * sensorless回零依赖ZDT状态包；状态包缺失时走软件堵转判断。
+ */
 static void zdt_stop_repeat(uint8_t addr)
 {
   uint8_t i;
@@ -578,6 +613,55 @@ static bool shengjiang_homezero_run(uint8_t *status)
   return true;
 }
 
+/* ==================== IMU航向处理 ====================
+ * 只做最简单的开机零位，不做温漂模型、不写IMU内部配置。
+ * 当前路线角度仍按原来的相对角使用。
+ */
+/* ==================== Yaw角度归一化 ====================
+ * Wit模块输出范围可能跨过+-180度，这里统一压回[-180, 180]。
+ * PID_Calc里面也有跨180度处理，两边保持同一个角度语义。
+ */
+static float yaw_norm(float yaw)
+{
+  while (yaw > 180.0f)
+  {
+    yaw -= 360.0f;
+  }
+  while (yaw < -180.0f)
+  {
+    yaw += 360.0f;
+  }
+  return yaw;
+}
+
+/* ==================== 当前相对航向 ====================
+ * raw是IMU原始Yaw；yaw0是开机零位。
+ */
+static float yaw_now(float raw)
+{
+  return yaw_norm(raw - yaw0);
+}
+
+/* ==================== 开机取零 ====================
+ * 等IMU串口先吐几帧数据，再取最后一帧Yaw做零位。
+ * 这段期间不要推车，否则零位会偏。
+ */
+static void imu_zero(void)
+{
+  uint8_t i;
+
+  for (i = 0U; i < 30U; i++)
+  {
+    delay_ms1(20U);
+    imu_scan(fAcc, fGyro, fAngle);
+  }
+  yaw0 = fAngle[2];
+}
+
+/* ==================== 底盘初始化 ====================
+ * 顺序很重要：CAN先起，软件位置清零，IMU取零，最后执行机构复位。
+ * 开机取IMU零位时车身需要保持静止。
+ */
 void race_chassis_init(void)
 {
   can_filter_start();
@@ -599,6 +683,7 @@ void race_chassis_init(void)
 
   dianji_move_flag = 1U;
   imu_init();
+  imu_zero();
   PIDInit();
   race_actuator_reset_all();
 }
@@ -608,6 +693,10 @@ void race_heat_set(uint16_t compare)
   __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, compare);
 }
 
+/* ==================== 底盘速度参数 ====================
+ * change_A 控制速度模式加速度。
+ * change_SNA1 控制距离模式加速度和基础速度。
+ */
 void change_A(int a_in)
 {
   a = a_in;
@@ -619,6 +708,10 @@ void change_SNA1(int a_in, int speed)
   car_move_speed = speed;
 }
 
+/* ==================== 四轮速度分配 ====================
+ * 四个ZDT轮电机按麦轮方向分配 vx / vy / w。
+ * 这里保留显式四行，方便现场单轮方向排查。
+ */
 void car_move(int v_x, int v_y, int w)
 {
   int speed[5];
@@ -638,6 +731,10 @@ void car_move(int v_x, int v_y, int w)
   delay_ms1(1U);
 }
 
+/* ==================== 底盘距离移动 ====================
+ * X/Y距离换算目前使用实测脉冲系数。
+ * car_move_delay 只负责估算等待时间，不参与电机闭环。
+ */
 void car_move_distance_x(float x)
 {
   int v_x;
@@ -720,6 +817,10 @@ double car_move_delay(float distance, uint16_t a_of_car, uint16_t speed_of_car, 
   return time;
 }
 
+/* ==================== 升降/平推时间估算 ====================
+ * ZDT位置模式的等待时间按梯形速度粗估。
+ * 最小等待200ms，避免短行程马上进入下一步动作。
+ */
 static double shengjiang_move_delay(float quanshu, uint16_t accel, uint16_t speed)
 {
   double quanshu_fenjie;
@@ -799,6 +900,10 @@ void car_move_distance(float x, float y, int a_in, int speed_in)
   (void)car_move_delay(y, (uint16_t)a_in, (uint16_t)speed_in, 0U);
 }
 
+/* ==================== 航向PID ====================
+ * PID_move 用TIM4按50ms节拍跑，输出直接作为底盘w。
+ * 反馈值使用相对Yaw，target仍然是任务代码里的目标角。
+ */
 void PIDInit(void)
 {
   mypid.kp = 1.5f;
@@ -872,13 +977,14 @@ static void PID_tim4_run(void)
   if ((real_time <= delay_time) && (dianji_move_flag != 0U))
   {
     imu_scan(fAcc, fGyro, fAngle);
-    feedbackValue = fAngle[2];
+    /* PID只看相对Yaw，不直接用IMU绝对Yaw。 */
+    feedbackValue = yaw_now(fAngle[2]);
     PID_Calc(&mypid, targetValue, feedbackValue);
     if (feedbackValue == feedbackValue_pre)
     {
       same_time++;
     }
-    feedbackValue_pre = fAngle[2];
+    feedbackValue_pre = feedbackValue;
     car_move(vx, vy, (int)mypid.output);
     flag = 0;
   }
@@ -962,6 +1068,10 @@ uint8_t PID_move(int v_x, int v_y, int w, uint32_t time, float target, int pid_c
   return 1U;
 }
 
+/* ==================== 升降机构控制 ====================
+ * 目标位置先做软件限位，再换算成ZDT位置脉冲。
+ * current_pos1 是软件位置，回零成功后必须同步清零。
+ */
 double shengjiang_control(int target_pos, uint16_t speed, uint8_t accel)
 {
   int move_distance;
@@ -1019,6 +1129,10 @@ bool race_shengjiang_homezero(void)
   return shengjiang_homezero_run(&status);
 }
 
+/* ==================== 平推机构控制 ====================
+ * 目标位置使用毫米/现场标定单位，内部换算成ZDT脉冲。
+ * current_pos 是软件位置，清零时同时清驱动器当前位置。
+ */
 double pingtui_control(float target_pos, uint16_t speed, uint8_t accel)
 {
   float move_distance;
@@ -1076,6 +1190,10 @@ void race_pingtui_clear_zero(void)
   delay_ms1(5U);
 }
 
+/* ==================== 执行机构总停和复位 ====================
+ * 总停同时停止ZDT运动、回零流程和加热。
+ * 复位用于开局：爪手张开、五块平台回默认、云台归零、平推/升降回零。
+ */
 void race_actuator_stop_all(void)
 {
   (void)zdt_stop_all();
@@ -1100,6 +1218,10 @@ void pingtui_reset(void)
   race_pingtui_clear_zero();
 }
 
+/* ==================== 舵机动作接口 ====================
+ * 云台和五块平台走慢速过渡；爪手直接给PWM。
+ * 所有等待时间都在这里消化，任务层只按动作顺序调用。
+ */
 void set_yuantai_Angle(float target, float time)
 {
   uint16_t target_pwm = yuantai_pwm_from_angle(target);
@@ -1151,6 +1273,10 @@ void set_wukuaipingtai_weizhi(int pos)
   }
 }
 
+/* ==================== 多执行机构联动 ====================
+ * move_all 按最长动作时间等待，保证平推、升降、云台基本同步结束。
+ * move_all1 保留原来的固定云台等待，适合不需要精确同步的动作。
+ */
 int move_all(float target_pos, uint16_t speed, uint8_t accel, float target_pos1, uint16_t speed1, uint8_t accel1, float target, float speed_of_yuntai)
 {
   double time1;
