@@ -32,7 +32,6 @@ static void servo_set2(uint16_t v);
 static void servo_set3(uint16_t v);
 static void servo_set4(uint16_t v);
 static void servo_step2(int d);
-static void servo_step3(int d);
 static void servo_step4(int d);
 
 static void txs(const char *s)
@@ -182,11 +181,6 @@ static void servo_set4(uint16_t v)
 static void servo_step2(int d)
 {
   servo_set2((uint16_t)((int)s_servo2 + d));
-}
-
-static void servo_step3(int d)
-{
-  servo_set3((uint16_t)((int)s_servo3 + d));
 }
 
 static void servo_step4(int d)

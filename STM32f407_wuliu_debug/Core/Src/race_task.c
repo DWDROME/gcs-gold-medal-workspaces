@@ -51,13 +51,6 @@ static void wait_packet_98(void)
   Serial_RxPacket[1] = 0x30U;
 }
 
-static void clear_ckp(void)
-{
-  (void)sprintf(tjcstr, "t0.txt=\"  \"");
-  HMISends(tjcstr);
-  HMISendb(0xffU);
-}
-
 static void transfer_position_wukuai(uint8_t task_choose, float distance, uint8_t color)
 {
   float bilichi = 0.0f;
