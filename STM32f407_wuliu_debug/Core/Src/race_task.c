@@ -31,6 +31,7 @@
 #define VISION_RESULT_GREEN 0x32U
 #define VISION_RESULT_BLUE 0x33U
 #define VISION_RESULT_MISS 0x34U
+#define VISION_WAIT_ACK_MS 30000U
 
 static char tjcstr[100];
 static int task[6];
@@ -41,23 +42,51 @@ static float distance_wukuai = 150.0f;
 static float x_origin = 0.0f;
 static float y_origin = 0.0f;
 
-static void wait_send_shumeipai(uint8_t message, uint16_t time)
+static void race_host_timeout_stop(void)
 {
-  (void)time;
-  (void)Serial_GetRxFlag();
-  Serial_SendByte(message);
+  race_heat_set(0U);
+  car_move(0, 0, 0);
   while (1)
+  {
+    LED_Toggle1();
+    delay_ms1(200U);
+  }
+}
+
+static uint8_t wait_rx_ms(uint32_t time)
+{
+  uint32_t start = HAL_GetTick();
+
+  while ((HAL_GetTick() - start) < time)
   {
     if (Serial_GetRxFlag() == 1U)
     {
-      break;
+      return 1U;
     }
   }
+  return 0U;
+}
+
+static void wait_or_stop(uint32_t time)
+{
+  if (wait_rx_ms(time) == 0U)
+  {
+    race_host_timeout_stop();
+  }
+}
+
+static void wait_send_shumeipai(uint8_t message, uint16_t time)
+{
+  (void)Serial_GetRxFlag();
+  Serial_SendByte(message);
+  wait_or_stop(time);
 }
 
 static void wait_packet_98(void)
 {
-  while (1)
+  uint32_t start = HAL_GetTick();
+
+  while ((HAL_GetTick() - start) < VISION_WAIT_ACK_MS)
   {
     if (Serial_RxPacket[0] == ASCII_9 && Serial_RxPacket[1] == ASCII_8)
     {
@@ -69,6 +98,12 @@ static void wait_packet_98(void)
       break;
     }
   }
+
+  if (Serial_RxPacket[0] != ASCII_9 || Serial_RxPacket[1] != ASCII_8)
+  {
+    race_host_timeout_stop();
+  }
+
   Serial_RxPacket[0] = ASCII_0;
   Serial_RxPacket[1] = ASCII_0;
 }
