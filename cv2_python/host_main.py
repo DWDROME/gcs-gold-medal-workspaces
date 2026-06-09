@@ -160,7 +160,7 @@ def send_data(data):
 def receive_data():
     port = open_host_serial()
     if port.in_waiting > 0:
-        return port.readline().decode("utf-8", errors="ignore").strip()
+        return port.read(1).decode("utf-8", errors="ignore")
     return None
 
 def restart_program():

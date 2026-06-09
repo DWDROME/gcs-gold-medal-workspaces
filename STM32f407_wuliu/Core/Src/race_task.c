@@ -94,11 +94,19 @@ static uint8_t wait_rx_ms(uint32_t time)
   return 0U;
 }
 
-static uint8_t wait_send_shumeipai(uint8_t message, uint16_t time)
+static void wait_or_stop(uint32_t time)
+{
+  if (wait_rx_ms(time) == 0U)
+  {
+    race_host_timeout_stop();
+  }
+}
+
+static void send_wait_or_stop(uint8_t message, uint16_t time)
 {
   (void)Serial_GetRxFlag();
   Serial_SendByte(message);
-  return wait_rx_ms(time);
+  wait_or_stop(time);
 }
 
 static void wait_packet_98(void)
@@ -408,15 +416,15 @@ static void race_stage_pick_first_platform_blocks(void)
   car_move2(-30.0f, 0.0f, 100, 100);
   while (1)
   {
-    if (wait_rx_ms(15000U) == 0U) race_host_timeout_stop();
+    wait_or_stop(15000U);
     transfer_position_wukuai(0x01U, 70.0f, 0x00U);
     car_move_distance(direct_x, direct_y, 100, 80);
     if (Serial_RxPacket[8] != VISION_RESULT_MISS) break;
-    if (wait_send_shumeipai(VISION_CMD_FIRST_BLOCK_LOCATE, 15000U) == 0U) race_host_timeout_stop();
+    send_wait_or_stop(VISION_CMD_FIRST_BLOCK_LOCATE, 15000U);
   }
 
   act_pose(ACT_X_SAFE, ACT_H_TRANSFER, YT_CENTER_RING_DEG);
-  if (wait_send_shumeipai(VISION_CMD_FIRST_BLOCK_CODES, 20000U) == 0U) race_host_timeout_stop();
+  send_wait_or_stop(VISION_CMD_FIRST_BLOCK_CODES, 20000U);
   ypcode[0] = Serial_RxPacket[0] - ASCII_0;
   ypcode[1] = Serial_RxPacket[1] - ASCII_0;
   ypcode[2] = Serial_RxPacket[2] - ASCII_0;
@@ -425,12 +433,12 @@ static void race_stage_pick_first_platform_blocks(void)
   yuantai_na((uint8_t)ypcode[0]);
   set_wukuaipingtai_weizhi(PLATFORM_POS_2);
   yuantai_na1((uint8_t)ypcode[1]);
-  if (wait_send_shumeipai(VISION_CMD_FIRST_BLOCK_CODE1, 30000U) == 0U) race_host_timeout_stop();
+  send_wait_or_stop(VISION_CMD_FIRST_BLOCK_CODE1, 30000U);
   wait_packet_98();
   yuantai_na2((uint8_t)ypcode[1]);
   set_wukuaipingtai_weizhi(PLATFORM_POS_3);
   yuantai_na1((uint8_t)ypcode[2]);
-  if (wait_send_shumeipai(VISION_CMD_FIRST_BLOCK_CODE2, 30000U) == 0U) race_host_timeout_stop();
+  send_wait_or_stop(VISION_CMD_FIRST_BLOCK_CODE2, 30000U);
   wait_packet_98();
   yuantai_na2((uint8_t)ypcode[2]);
 }
@@ -456,14 +464,14 @@ static void race_stage_first_ring_task012(void)
   race_heat_set(ACT_HEAT_COMPARE);
   while (1)
   {
-    if (wait_send_shumeipai(VISION_CMD_RING_COARSE, 10000U) == 0U) race_host_timeout_stop();
+    send_wait_or_stop(VISION_CMD_RING_COARSE, 10000U);
     transfer_position_sehuan(0x01U, 0x02U);
     car_move_distance(direct_x, direct_y, 180, 150);
     if (Serial_RxPacket[8] != VISION_RESULT_MISS) break;
   }
   PID_move(0, 0, 0, 1000U, -180.0f, PID_PROFILE_YAW_SETTLE_KI_HIGH);
 
-  if (wait_send_shumeipai(VISION_CMD_RING_FINE, 10000U) == 0U) race_host_timeout_stop();
+  send_wait_or_stop(VISION_CMD_RING_FINE, 10000U);
   transfer_position_sehuan(0x02U, 0x02U);
   if (Serial_RxPacket[8] == VISION_RESULT_MISS) car_move_distance(0.0f, 0.0f, 70, 50);
   else car_move_distance(direct_x, direct_y, 130, 100);
@@ -501,14 +509,14 @@ static void race_stage_second_ring_task012(void)
   race_heat_set(ACT_HEAT_COMPARE);
   while (1)
   {
-    if (wait_send_shumeipai(VISION_CMD_RING_COARSE, 10000U) == 0U) race_host_timeout_stop();
+    send_wait_or_stop(VISION_CMD_RING_COARSE, 10000U);
     transfer_position_sehuan(0x01U, 0x02U);
     car_move_distance(direct_x, direct_y, 180, 150);
     if (Serial_RxPacket[8] != VISION_RESULT_MISS) break;
   }
   PID_move(0, 0, 0, 1000U, 90.0f, PID_PROFILE_YAW_SETTLE_KI_HIGH);
 
-  if (wait_send_shumeipai(VISION_CMD_RING_FINE, 10000U) == 0U) race_host_timeout_stop();
+  send_wait_or_stop(VISION_CMD_RING_FINE, 10000U);
   transfer_position_sehuan(0x02U, 0x02U);
   if (Serial_RxPacket[8] == VISION_RESULT_MISS) car_move_distance(0.0f, 0.0f, 70, 50);
   else car_move_distance(direct_x, direct_y, 130, 100);
@@ -544,14 +552,14 @@ static void race_stage_pick_second_platform_blocks(void)
   delay_ms1(100U);
   while (1)
   {
-    if (wait_rx_ms(15000U) == 0U) race_host_timeout_stop();
+    wait_or_stop(15000U);
     transfer_position_wukuai(0x01U, 70.0f, 0x00U);
     car_move_distance(direct_x, direct_y, 100, 80);
     if (Serial_RxPacket[8] != VISION_RESULT_MISS) break;
-    if (wait_send_shumeipai(VISION_CMD_SECOND_BLOCK_LOCATE, 15000U) == 0U) race_host_timeout_stop();
+    send_wait_or_stop(VISION_CMD_SECOND_BLOCK_LOCATE, 15000U);
   }
   act_pose(ACT_X_SAFE, ACT_H_TRANSFER, YT_CENTER_RING_DEG);
-  if (wait_send_shumeipai(VISION_CMD_SECOND_BLOCK_CODES, 20000U) == 0U) race_host_timeout_stop();
+  send_wait_or_stop(VISION_CMD_SECOND_BLOCK_CODES, 20000U);
   ypcode[0] = Serial_RxPacket[0] - ASCII_0;
   ypcode[1] = Serial_RxPacket[1] - ASCII_0;
   ypcode[2] = Serial_RxPacket[2] - ASCII_0;
@@ -559,12 +567,12 @@ static void race_stage_pick_second_platform_blocks(void)
   yuantai_na((uint8_t)ypcode[0]);
   set_wukuaipingtai_weizhi(PLATFORM_POS_2);
   yuantai_na1((uint8_t)ypcode[1]);
-  if (wait_send_shumeipai(VISION_CMD_SECOND_BLOCK_CODE1, 30000U) == 0U) race_host_timeout_stop();
+  send_wait_or_stop(VISION_CMD_SECOND_BLOCK_CODE1, 30000U);
   wait_packet_98();
   yuantai_na2((uint8_t)ypcode[1]);
   set_wukuaipingtai_weizhi(PLATFORM_POS_3);
   yuantai_na1((uint8_t)ypcode[2]);
-  if (wait_send_shumeipai(VISION_CMD_SECOND_BLOCK_CODE2, 30000U) == 0U) race_host_timeout_stop();
+  send_wait_or_stop(VISION_CMD_SECOND_BLOCK_CODE2, 30000U);
   wait_packet_98();
   yuantai_na2((uint8_t)ypcode[2]);
 }
@@ -589,13 +597,13 @@ static void race_stage_third_ring_task345(void)
   race_heat_set(ACT_HEAT_COMPARE);
   while (1)
   {
-    if (wait_send_shumeipai(VISION_CMD_RING_COARSE, 20000U) == 0U) race_host_timeout_stop();
+    send_wait_or_stop(VISION_CMD_RING_COARSE, 20000U);
     transfer_position_sehuan(0x01U, 0x02U);
     car_move_distance(direct_x, direct_y, 180, 150);
     if (Serial_RxPacket[8] != VISION_RESULT_MISS) break;
   }
   PID_move(0, 0, 0, 1000U, -180.0f, PID_PROFILE_YAW_SETTLE_KI_HIGH);
-  if (wait_send_shumeipai(VISION_CMD_RING_FINE, 20000U) == 0U) race_host_timeout_stop();
+  send_wait_or_stop(VISION_CMD_RING_FINE, 20000U);
   transfer_position_sehuan(0x02U, 0x02U);
   if (Serial_RxPacket[8] == VISION_RESULT_MISS) car_move_distance(0.0f, 0.0f, 70, 50);
   else car_move_distance(direct_x, direct_y, 130, 100);
@@ -633,13 +641,13 @@ static void race_stage_fourth_ring_task345(void)
   race_heat_set(ACT_HEAT_COMPARE);
   while (1)
   {
-    if (wait_send_shumeipai(VISION_CMD_LAST_BLOCK_LOCATE, 10000U) == 0U) race_host_timeout_stop();
+    send_wait_or_stop(VISION_CMD_LAST_BLOCK_LOCATE, 10000U);
     transfer_position_wukuai(0x02U, 70.0f, 0x02U);
     car_move_distance(direct_x, direct_y, 180, 150);
     delay_ms1(200U);
     if (Serial_RxPacket[8] != VISION_RESULT_MISS) break;
   }
-  if (wait_send_shumeipai(VISION_CMD_LAST_BLOCK_LOCATE, 10000U) == 0U) race_host_timeout_stop();
+  send_wait_or_stop(VISION_CMD_LAST_BLOCK_LOCATE, 10000U);
   transfer_position_wukuai(0x02U, 70.0f, 0x02U);
   if (Serial_RxPacket[8] == VISION_RESULT_MISS) car_move_distance(0.0f, 0.0f, 70, 50);
   else car_move_distance(direct_x, direct_y, 180, 150);
