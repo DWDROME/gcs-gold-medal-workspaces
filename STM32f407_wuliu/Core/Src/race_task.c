@@ -384,9 +384,9 @@ static void race_stage_read_task_order(void)
   {
     race_host_timeout_stop();
   }
-  (void)sprintf(tjcstr, "t0.txt=\"%d%d%d+%d%d%d \"",
-                Serial_RxPacket[0] - ASCII_0, Serial_RxPacket[1] - ASCII_0, Serial_RxPacket[2] - ASCII_0,
-                Serial_RxPacket[4] - ASCII_0, Serial_RxPacket[5] - ASCII_0, Serial_RxPacket[6] - ASCII_0);
+  (void)snprintf(tjcstr, sizeof(tjcstr), "t0.txt=\"%d%d%d+%d%d%d \"",
+                 Serial_RxPacket[0] - ASCII_0, Serial_RxPacket[1] - ASCII_0, Serial_RxPacket[2] - ASCII_0,
+                 Serial_RxPacket[4] - ASCII_0, Serial_RxPacket[5] - ASCII_0, Serial_RxPacket[6] - ASCII_0);
   HMISends(tjcstr);
   HMISendb(0xffU);
 

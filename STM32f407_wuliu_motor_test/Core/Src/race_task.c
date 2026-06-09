@@ -379,9 +379,9 @@ void race_task_run(void)
   {
     if (Serial_GetRxFlag() == 1U)
     {
-      (void)sprintf(tjcstr, "t0.txt=\"%d%d%d+%d%d%d \"",
-                    Serial_RxPacket[0] - 0x30U, Serial_RxPacket[1] - 0x30U, Serial_RxPacket[2] - 0x30U,
-                    Serial_RxPacket[4] - 0x30U, Serial_RxPacket[5] - 0x30U, Serial_RxPacket[6] - 0x30U);
+      (void)snprintf(tjcstr, sizeof(tjcstr), "t0.txt=\"%d%d%d+%d%d%d \"",
+                     Serial_RxPacket[0] - 0x30U, Serial_RxPacket[1] - 0x30U, Serial_RxPacket[2] - 0x30U,
+                     Serial_RxPacket[4] - 0x30U, Serial_RxPacket[5] - 0x30U, Serial_RxPacket[6] - 0x30U);
       HMISends(tjcstr);
       HMISendb(0xffU);
       break;
