@@ -120,7 +120,7 @@ void host_rx_copy(uint8_t *out)
 
 void host_send_byte(uint8_t b)
 {
-  /* 阻塞发送一字节; 不补换行(对端 readline 靠 0.1s 超时取回, 见 .h 取舍说明) */
+  /* 阻塞发送一字节; 不补换行, 对端按 read(1) 取命令字节 */
   (void)HAL_UART_Transmit(&HOST_UART, &b, 1U, 100U);
 }
 

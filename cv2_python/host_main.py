@@ -45,8 +45,22 @@ DEBUG_RUN_RING_CENTERED = False
 DEBUG_RUN_MADUO = False
 DEBUG_RUN_MADUO_CENTERED = False
 
+def env_int(name, default, min_value=None):
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    try:
+        parsed = int(value)
+    except ValueError:
+        print(f"忽略无效环境变量 {name}={value!r}，使用默认值 {default}")
+        return default
+    if min_value is not None and parsed < min_value:
+        print(f"忽略过小环境变量 {name}={value!r}，使用默认值 {default}")
+        return default
+    return parsed
+
 HOST_SERIAL_PORT = os.environ.get("GCS_HOST_SERIAL", "/dev/ttyUSB0")
-HOST_SERIAL_BAUD = int(os.environ.get("GCS_HOST_BAUD", "115200"))
+HOST_SERIAL_BAUD = env_int("GCS_HOST_BAUD", 115200, 1)
 DRY_RUN_SERIAL = os.environ.get("GCS_DRY_RUN_SERIAL", "0") == "1"
 CAMERA_QR_DEVICE = os.environ.get("GCS_QR_CAMERA", "/dev/video_xia0")
 CAMERA_UPPER_DEVICE = os.environ.get("GCS_UPPER_CAMERA", "/dev/video_shang0")
@@ -2330,7 +2344,7 @@ def run_ring_preview():
     try:
         autofocus_enabled = cap0.get(cv2.CAP_PROP_AUTOFOCUS) > 0
         frame_index = 0
-        process_every = max(1, int(os.environ.get("GCS_RING_PROCESS_EVERY", "1")))
+        process_every = env_int("GCS_RING_PROCESS_EVERY", 1, 1)
         last_results = []
         last_debug = {"raw": 0, "selected": 0, "nonzero": 0}
         while True:
