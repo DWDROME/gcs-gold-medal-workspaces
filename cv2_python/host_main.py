@@ -717,7 +717,7 @@ def run_wukuaiyuanxin_xuanzequyu(i, yanse):  ##第一圈物块定标（普通圆
     stable_count = 0
     last_center = None
     last_detection_time = None  # 记录上次成功检测的时间
-    timeout_ms = 300  # 超时时间100毫秒
+    timeout_ms = 300  # 超时时间300毫秒
 
     while True:
         ret, frame = cap.read()
@@ -1728,7 +1728,7 @@ def run_maduoyuanxin2_centered():  # 初赛放物块的时候，色环第二次�
 
     start_time = time.time()
     last_detection_time = None  # 记录上次成功检测的时间
-    timeout_ms = 200  # 超时时间300毫秒
+    timeout_ms = 200  # 超时时间200毫秒
     
     # 稳定性检测相关变量
     stable_count = 0  # 位置稳定计数
