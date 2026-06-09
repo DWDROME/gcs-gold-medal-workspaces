@@ -7,6 +7,9 @@
 #include "tim.h"
 #include "usart.h"
 #include "wit_c_sdk.h"
+#include <errno.h>
+#include <limits.h>
+#include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -281,8 +284,10 @@ static bool parse_i32(char **cursor, int32_t *out)
   long value;
 
   trim_left(cursor);
+  errno = 0;
   value = strtol(*cursor, &end, 10);
-  if (end == *cursor)
+  if (end == *cursor || errno == ERANGE ||
+      value < (long)INT32_MIN || value > (long)INT32_MAX)
   {
     return false;
   }
@@ -298,8 +303,9 @@ static bool parse_float(char **cursor, float *out)
   float value;
 
   trim_left(cursor);
+  errno = 0;
   value = strtof(*cursor, &end);
-  if (end == *cursor)
+  if (end == *cursor || errno == ERANGE || !isfinite(value))
   {
     return false;
   }
