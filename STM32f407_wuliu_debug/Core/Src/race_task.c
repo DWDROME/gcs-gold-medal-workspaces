@@ -31,6 +31,7 @@
 #define VISION_RESULT_GREEN 0x32U
 #define VISION_RESULT_BLUE 0x33U
 #define VISION_RESULT_MISS 0x34U
+#define VISION_WAIT_TASK_ORDER_MS 20000U
 #define VISION_WAIT_ACK_MS 30000U
 
 static char tjcstr[100];
@@ -428,18 +429,12 @@ void race_task_run(void)
   car_move2(150.0f, 0.0f, 150, 150);
   car_move1(0.0f, -530.0f, 150, 200);
 
-  while (1)
-  {
-    if (Serial_GetRxFlag() == 1U)
-    {
-      (void)snprintf(tjcstr, sizeof(tjcstr), "t0.txt=\"%d%d%d+%d%d%d \"",
-                     Serial_RxPacket[0] - ASCII_0, Serial_RxPacket[1] - ASCII_0, Serial_RxPacket[2] - ASCII_0,
-                     Serial_RxPacket[4] - ASCII_0, Serial_RxPacket[5] - ASCII_0, Serial_RxPacket[6] - ASCII_0);
-      HMISends(tjcstr);
-      HMISendb(0xffU);
-      break;
-    }
-  }
+  wait_or_stop(VISION_WAIT_TASK_ORDER_MS);
+  (void)snprintf(tjcstr, sizeof(tjcstr), "t0.txt=\"%d%d%d+%d%d%d \"",
+                 Serial_RxPacket[0] - ASCII_0, Serial_RxPacket[1] - ASCII_0, Serial_RxPacket[2] - ASCII_0,
+                 Serial_RxPacket[4] - ASCII_0, Serial_RxPacket[5] - ASCII_0, Serial_RxPacket[6] - ASCII_0);
+  HMISends(tjcstr);
+  HMISendb(0xffU);
 
   task[0] = Serial_RxPacket[0] - ASCII_0;
   task[1] = Serial_RxPacket[1] - ASCII_0;
@@ -461,7 +456,7 @@ void race_task_run(void)
   car_move2(-30.0f, 0.0f, 100, 100);
   while (1)
   {
-    while (Serial_GetRxFlag() == 0U) {}
+    wait_or_stop(15000U);
     transfer_position_wukuai(0x01U, 70.0f, 0x00U);
     car_move_distance(direct_x, direct_y, 100, 80);
     if (Serial_RxPacket[8] != VISION_RESULT_MISS) break;
@@ -598,7 +593,7 @@ void race_task_run(void)
   delay_ms1(100U);
   while (1)
   {
-    while (Serial_GetRxFlag() == 0U) {}
+    wait_or_stop(15000U);
     transfer_position_wukuai(0x01U, 70.0f, 0x00U);
     car_move_distance(direct_x, direct_y, 100, 80);
     if (Serial_RxPacket[8] != VISION_RESULT_MISS) break;
