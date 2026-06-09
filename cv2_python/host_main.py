@@ -1883,70 +1883,70 @@ class HostSerialCommandHandler:
             restart_program()
             return
 
-        if "1" in command:
+        if command == "1":
             print("检测到任务1: 执行二维码检测")
             run_erweima()
             cap = open_camera(CAMERA_UPPER_DEVICE)
-        elif "2" in command:
+        elif command == "2":
             print("检测到任务2: 执行物块检测")
             C_1 = run_wukuaiyuanxin_1()
-        elif "a" in command:
+        elif command == "a":
             print("检测到任务a: 执行第二圈物块初始检测")
             cap = open_camera(CAMERA_UPPER_DEVICE)
             C_1_loop2 = run_wukuaiyuanxin_1()
-        elif "3" in command:
+        elif command == "3":
             print("检测到任务3: 执行第一圈转盘物块检测")
             LOOP1()
             if cap and cap.isOpened():
                 cap.release()
-        elif "4" in command:
+        elif command == "4":
             print("检测到任务4: 执行第二圈转盘物块检测")
             LOOP2()
             if cap and cap.isOpened():
                 cap.release()
-        elif "5" in command:
+        elif command == "5":
             print("first loop 已抓完第一个物块，识别第二个物块是否稳定")
             if INDEX1 == 1:
                 run_wukuaiyuanxin_xuanzequyu(INDEX1, A[1])
             else:
                 run_wukuaiyuanxin_xuanzequyu(0, A[1])
-        elif "6" in command:
+        elif command == "6":
             print("first loop 已抓完第二个物块，识别第三个物块是否稳定")
             if INDEX2 == 1:
                 run_wukuaiyuanxin_xuanzequyu(INDEX2, A[2])
             else:
                 run_wukuaiyuanxin_xuanzequyu(0, A[2])
-        elif "b" in command:
+        elif command == "b":
             print("second loop 已抓完第一个物块，识别第二个物块是否稳定")
             if INDEX1_loop2 == 1:
                 run_wukuaiyuanxin_xuanzequyu(INDEX1_loop2, A[5])
             else:
                 run_wukuaiyuanxin_xuanzequyu(0, A[5])
-        elif "c" in command:
+        elif command == "c":
             print("second loop 已抓完第二个物块，识别第三个物块是否稳定")
             if INDEX2_loop2 == 1:
                 run_wukuaiyuanxin_xuanzequyu(INDEX2_loop2, A[6])
             else:
                 run_wukuaiyuanxin_xuanzequyu(0, A[6])
-        elif "7" in command:
+        elif command == "7":
             cap2 = open_camera(CAMERA_UPPER_DEVICE)
             print("进行色环检测的第一次定标")
             run_sehuanyuanxin2()
-        elif "d" in command:
+        elif command == "d":
             print("进行色环检测的直线纠偏")
             send_data("000000000")
-        elif "8" in command:
+        elif command == "8":
             print("进行色环检测的精细定标")
             run_sehuanyuanxin2_centered()
             if cap2 and cap2.isOpened():
                 cap2.release()
-        elif "9" in command:
+        elif command == "9":
             cap2 = open_camera(CAMERA_UPPER_DEVICE)
             print("进行码垛检测的第一次定标")
             run_maduoyuanxin2()
             if cap2 and cap2.isOpened():
                 cap2.release()
-        elif "0" in command:
+        elif command == "0":
             cap2 = open_camera(CAMERA_UPPER_DEVICE)
             print("进行码垛检测的精细定标")
             run_maduoyuanxin2_centered()
